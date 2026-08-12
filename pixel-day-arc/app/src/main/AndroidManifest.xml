@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <!-- Watch Face Format bundles are resource-only. No code, ever. -->
+    <application
+        android:label="@string/app_name"
+        android:hasCode="false">
+
+        <!--
+          Format version 1 (Wear OS 4+). Everything this face uses —
+          SECONDS_IN_DAY, STEP_COUNT, BATTERY_PERCENT, TextCircular —
+          is available in v1, so we declare the lowest version that
+          supports the design and reach the widest set of devices.
+        -->
+        <property
+            android:name="com.google.wear.watchface.format.version"
+            android:value="1" />
+
+        <service
+            android:name="androidx.wear.watchface.control.WatchFaceControlService"
+            android:exported="true"
+            android:permission="com.google.android.wearable.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+                <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
+            </intent-filter>
+            <meta-data
+                android:name="com.google.android.wearable.watchface.preview"
+                android:resource="@drawable/preview" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.preview_circular"
+                android:resource="@drawable/preview" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.info"
+                android:resource="@xml/watch_face_info" />
+            <meta-data
+                android:name="com.google.android.wearable.watchface.shapes"
+                android:resource="@xml/watch_face_shapes" />
+        </service>
+
+    </application>
+
+</manifest>

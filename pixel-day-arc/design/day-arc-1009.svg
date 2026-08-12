@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 450" width="450" height="450">
+  <!--
+    Day Arc — design reference, rendered at 10:09.
+
+    This is the source of truth for the geometry in
+    app/src/main/res/raw/watchface.xml. Every number here has a
+    counterpart there:
+
+      sun orbit radius      173   (WFF: sun drawn at local y=52 in a
+                                   450x450 group rotated about its centre)
+      sun angle at 10:09    332.25 deg   = (36540 / 86400) * 360 + 180
+      earth ellipse         cx 225, cy 1019, rx 600, ry 727
+                                  -> apex (225,292), edges (0,345)/(450,345)
+      complication arc      r 186, spanning 222 deg -> 138 deg
+      safe zone             r 198
+  -->
+  <defs>
+    <clipPath id="disc"><circle cx="225" cy="225" r="225"/></clipPath>
+
+    <!-- Sky. Axis runs from the sun through the centre to the far limb,
+         which is what the rotating Group achieves in WFF. -->
+    <linearGradient id="sky" gradientUnits="userSpaceOnUse"
+                    x1="120.1" y1="26.0" x2="329.9" y2="424.0">
+      <stop offset="0.00" stop-color="#FFF3D2"/>
+      <stop offset="0.07" stop-color="#FFD79B"/>
+      <stop offset="0.15" stop-color="#E5A57C"/>
+      <stop offset="0.28" stop-color="#A8C0D6"/>
+      <stop offset="0.48" stop-color="#5081B4"/>
+      <stop offset="0.72" stop-color="#1F3D68"/>
+      <stop offset="1.00" stop-color="#08152C"/>
+    </linearGradient>
+
+    <linearGradient id="earth" gradientUnits="userSpaceOnUse"
+                    x1="225" y1="292" x2="225" y2="450">
+      <stop offset="0.00" stop-color="#261E15"/>
+      <stop offset="0.55" stop-color="#0F1017"/>
+      <stop offset="1.00" stop-color="#070910"/>
+    </linearGradient>
+
+    <path id="comp" d="M100.5,363.2 A186,186 0 0 0 349.5,363.2"/>
+  </defs>
+
+  <g clip-path="url(#disc)">
+    <!-- atmosphere -->
+    <rect width="450" height="450" fill="url(#sky)"/>
+
+    <!-- sun track: sunrise at 9 o'clock, over the top, sunset at 3 o'clock -->
+    <path d="M52,225 A173,173 0 0 1 398,225" fill="none"
+          stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="2"
+          stroke-dasharray="3 9" stroke-linecap="round"/>
+
+    <!-- sun, with the same four-layer glow used in WFF -->
+    <circle cx="144.3" cy="72.0" r="62" fill="#FFD08A" fill-opacity="0.118"/>
+    <circle cx="144.3" cy="72.0" r="44" fill="#FFD89B" fill-opacity="0.188"/>
+    <circle cx="144.3" cy="72.0" r="30" fill="#FFE3B4" fill-opacity="0.302"/>
+    <circle cx="144.3" cy="72.0" r="19" fill="#FFF4D2"/>
+
+    <!-- time, set in the sky rather than in a band cut out of it -->
+    <text x="225" y="205" text-anchor="middle"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+          font-size="70" font-weight="300" letter-spacing="-2" fill="#FFFFFF">10:09</text>
+    <text x="225" y="248" text-anchor="middle"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+          font-size="14" letter-spacing="3" fill="#FFFFFF" fill-opacity="0.62">TUE 12 AUG</text>
+
+    <!-- the earth: a planet's limb, never a chord -->
+    <ellipse cx="225" cy="1019" rx="600" ry="727" fill="url(#earth)"/>
+    <ellipse cx="225" cy="1019" rx="600" ry="727" fill="none"
+             stroke="#FFD9A0" stroke-opacity="0.55" stroke-width="2"/>
+
+    <!-- complications on an arc concentric with the display -->
+    <text font-family="ui-monospace, 'DejaVu Sans Mono', monospace"
+          font-size="15" letter-spacing="1.3" fill="#8A93A0">
+      <textPath href="#comp" startOffset="50%" text-anchor="middle">6412 STEPS · 81%</textPath>
+    </text>
+  </g>
+</svg>

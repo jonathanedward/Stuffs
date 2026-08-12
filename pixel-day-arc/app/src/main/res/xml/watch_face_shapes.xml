@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One 450x450 circular definition. Pixel Watch ships 41mm and 45mm cases at
+  different resolutions; the system scales this design to fit, which is why
+  everything in watchface.xml is positioned proportionally rather than pinned
+  to device pixels.
+-->
+<WatchFaces>
+    <WatchFace shape="CIRCLE" width="450" height="450" file="@raw/watchface" />
+</WatchFaces>

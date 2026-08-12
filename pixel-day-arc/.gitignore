@@ -1,0 +1,12 @@
+# Watch Face Format spec, cloned on demand by tools/validate.sh
+.wff-spec/
+
+# Android / Gradle
+*.iml
+.gradle/
+.idea/
+build/
+local.properties
+.cxx/
+captures/
+.externalNativeBuild/

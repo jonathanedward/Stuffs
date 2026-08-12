@@ -1,0 +1,1 @@
+-keep class com.stampbook.app.data.local.** { *; }

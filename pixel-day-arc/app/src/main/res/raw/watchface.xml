@@ -216,24 +216,93 @@
 
         <!--
           ================= COMPLICATIONS =================
-          On an arc concentric with the display: r=186, so width/height=372.
-          Centred on 6 o'clock (180) with an 84 degree span => 222 -> 138.
+          Two user-configurable slots on mirrored flank arcs, both at r=186
+          (width/height 372) and 34 degrees wide, sitting either side of
+          6 o'clock:
+
+            left    228 -> 194     (14 to 48 degrees off the bottom)
+            right   166 -> 132
+
           COUNTER_CLOCKWISE is what stands the glyphs upright along the
           bottom; CLOCKWISE hangs them upside down.
+
+          A single 84-degree arc across the bottom read better, but it only
+          worked because the string was ours. Once anyone can drop "Next
+          event" into a slot, one long arc has nowhere to put the overflow.
+          Two short arcs each hold a short value, and ellipsis="TRUE" clips
+          what doesn't fit instead of running off the ends.
+
+          The arcs stop 48 degrees off the bottom because a glyph standing
+          perpendicular to the rim is also rotated by that angle, and past
+          roughly 50 degrees the text is steep enough to be uncomfortable to
+          read. That caps each arc near 110px, about 11 characters — which
+          is fine, since SHORT_TEXT providers are meant to fit in seven.
+
+          Coordinates inside a slot are relative to the slot's own x/y, so
+          both slots span the full face and differ only in their BoundingArc,
+          which is the tap target that launches the provider's app.
+
+          supportedTypes deliberately omits the image types: this face is
+          typographic, and an icon on a curved baseline looks like debris.
+          EMPTY is included so a slot can be switched off entirely.
         -->
-        <PartText name="complications" x="0" y="0" width="450" height="450">
+        <ComplicationSlot slotId="1" supportedTypes="SHORT_TEXT EMPTY"
+                          x="0" y="0" width="450" height="450">
             <Variant mode="AMBIENT" target="alpha" value="0" />
-            <TextCircular centerX="225" centerY="225" width="372" height="372"
-                          startAngle="222" endAngle="138"
-                          direction="COUNTER_CLOCKWISE" align="CENTER">
-                <Font family="SYNC_TO_DEVICE" size="15" color="#8A93A0">
-                    <Template><![CDATA[%d STEPS · %d%%]]>
-                        <Parameter expression="[STEP_COUNT]" />
-                        <Parameter expression="[BATTERY_PERCENT]" />
-                    </Template>
-                </Font>
-            </TextCircular>
-        </PartText>
+            <DefaultProviderPolicy defaultSystemProvider="STEP_COUNT"
+                                   defaultSystemProviderType="SHORT_TEXT" />
+            <BoundingArc centerX="225" centerY="225" width="372" height="372"
+                         thickness="46" startAngle="228" endAngle="194"
+                         direction="COUNTER_CLOCKWISE" isRoundEdge="TRUE" />
+            <Complication type="SHORT_TEXT">
+                <PartText x="0" y="0" width="450" height="450">
+                    <TextCircular centerX="225" centerY="225"
+                                  width="372" height="372"
+                                  startAngle="228" endAngle="194"
+                                  direction="COUNTER_CLOCKWISE"
+                                  align="CENTER" ellipsis="TRUE">
+                        <Font family="SYNC_TO_DEVICE" size="15" color="#8A93A0">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[COMPLICATION.TEXT]" />
+                            </Template>
+                        </Font>
+                    </TextCircular>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+        <ComplicationSlot slotId="2" supportedTypes="SHORT_TEXT EMPTY"
+                          x="0" y="0" width="450" height="450">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <DefaultProviderPolicy defaultSystemProvider="WATCH_BATTERY"
+                                   defaultSystemProviderType="SHORT_TEXT" />
+            <BoundingArc centerX="225" centerY="225" width="372" height="372"
+                         thickness="46" startAngle="166" endAngle="132"
+                         direction="COUNTER_CLOCKWISE" isRoundEdge="TRUE" />
+            <Complication type="SHORT_TEXT">
+                <PartText x="0" y="0" width="450" height="450">
+                    <TextCircular centerX="225" centerY="225"
+                                  width="372" height="372"
+                                  startAngle="166" endAngle="132"
+                                  direction="COUNTER_CLOCKWISE"
+                                  align="CENTER" ellipsis="TRUE">
+                        <Font family="SYNC_TO_DEVICE" size="15" color="#8A93A0">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[COMPLICATION.TEXT]" />
+                            </Template>
+                        </Font>
+                    </TextCircular>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+        <!-- Marker in the gap at 6 o'clock, holding the two arcs apart. -->
+        <PartDraw name="slot_divider" x="0" y="0" width="450" height="450">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Ellipse x="222" y="408" width="6" height="6">
+                <Fill color="#FF6E7783" />
+            </Ellipse>
+        </PartDraw>
 
     </Scene>
 </WatchFace>

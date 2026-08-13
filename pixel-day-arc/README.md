@@ -90,10 +90,53 @@ gradient lives *inside* that same rotating group, so its warm end always points
 at the sun. At night the warm end is buried behind the earth and only the deep
 blue end is visible. No colour interpolation anywhere — the light just moves.
 
-If you later want real daylight, `WEATHER.IS_DAY` and the hourly
-`WEATHER.HOURS.{n}.IS_DAY` forecast (format version 2+) can be scanned for the
-day/night transition. That's a real upgrade path, but it adds a weather
-dependency and a fallback for when the data isn't there.
+One nuance worth stating precisely, because it reads like a contradiction:
+`SUNRISE_SUNSET` **does** exist as a system *complication provider*, so real
+sunrise and sunset times are reachable — see `design/configured.png`, where a
+slot is showing one. What doesn't exist is a sunrise/sunset token for
+*expressions*. Complication data arrives as text for display, not as a number
+you can do arithmetic on, so it can show you when sunset is but it can't
+position the sun. The orbit stays on the clock.
+
+If you later want the sky itself to track real daylight, `WEATHER.IS_DAY` and
+the hourly `WEATHER.HOURS.{n}.IS_DAY` forecast (format version 2+) can be
+scanned for the day/night transition. That's a real upgrade path, but it adds a
+weather dependency and a fallback for when the data isn't there.
+
+## Complications
+
+| Defaults | Reconfigured |
+|---|---|
+| ![Default complications](app/src/main/res/drawable/preview.png) | ![Reconfigured complications](design/configured.png) |
+
+Two configurable slots sit on mirrored 34° arcs either side of six o'clock,
+both at r=186. They default to step count and watch battery, so the face looks
+identical out of the box.
+
+**People change them from either device.** WFF faces are edited by the *system*
+editor rather than a custom activity the developer writes, which is what lets
+the phone drive it:
+
+- **Phone** — Pixel Watch app → *Watch faces* → the face → *Edit*
+- **Watch** — long-press the face → *Customize* → swipe to complications
+
+That only works because `watch_face_info.xml` sets `Editable` to `true`;
+with it `false` the slots exist but the editor never offers them.
+
+`supportedTypes` is `SHORT_TEXT EMPTY` — deliberately no image types. This face
+is typographic, and an icon sitting on a curved baseline looks like debris.
+`EMPTY` is there so a slot can be switched off entirely.
+
+**The arc is the real constraint.** A single 84° arc across the bottom read
+better than two, but it only worked because the string was ours; nothing about
+`6,412 STEPS · 81%` survives a user choosing *Next event*. Two short arcs each
+hold one short value, and `ellipsis="TRUE"` clips the overflow instead of
+letting it run off the ends — the right-hand image shows that happening.
+
+The arcs stop 48° off the bottom because a glyph standing perpendicular to the
+rim is rotated by that same angle, and past roughly 50° the text is steep enough
+to be uncomfortable. That caps each arc near 110px, about 11 characters. Which
+is fine: `SHORT_TEXT` providers are meant to fit in seven.
 
 ## Build
 
@@ -153,9 +196,10 @@ pixel-day-arc/
 │       └── values/strings.xml
 ├── design/
 │   ├── day-arc-1009.svg               geometry source of truth
+│   ├── day-arc-configured.svg         slots after a user edits them
 │   ├── day-arc-ambient-1009.svg       always-on, sun up
 │   ├── day-arc-ambient-2215.svg       always-on, sun set
-│   └── ambient-*.png                  rendered from the two above
+│   └── *.png                          rendered from the SVGs above
 └── tools/
     ├── validate.sh                    XSD validation
     └── render-preview.mjs             SVG -> PNG for all three
@@ -175,9 +219,8 @@ node tools/render-preview.mjs
 
 - **12-hour time.** Currently hardcoded to 24-hour via `HOUR_0_23_Z`. Needs a
   `[IS_24_HOUR_MODE]` condition and a second text element.
-- **Configurable complications.** Steps and battery are fixed. Real complication
-  slots would let people choose, but the arc then has to tolerate any string
-  length people drop into it.
+- **Complications are hidden in ambient.** Defensible for power, but a single
+  value kept on the left arc might be worth the pixels.
 - **Burn-in.** The ambient numerals sit in a fixed spot. Wear OS shifts the
   whole face periodically to compensate, but if it proves insufficient the time
   could drift a few pixels on a slow cycle of its own.

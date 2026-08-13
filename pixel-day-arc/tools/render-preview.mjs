@@ -40,6 +40,7 @@ try {
 // renders live in design/ as documentation of the always-on state.
 const jobs = [
   ['design/day-arc-1009.svg',         'app/src/main/res/drawable/preview.png'],
+  ['design/day-arc-configured.svg',   'design/configured.png'],
   ['design/day-arc-ambient-1009.svg', 'design/ambient-1009.png'],
   ['design/day-arc-ambient-2215.svg', 'design/ambient-2215.png'],
 ];

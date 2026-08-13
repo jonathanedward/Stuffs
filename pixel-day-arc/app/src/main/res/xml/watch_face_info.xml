@@ -3,6 +3,9 @@
     <Preview value="@drawable/preview" />
     <Category value="CATEGORY_EMPTY" />
     <AvailableInRetail value="true" />
-    <MultipleInstancesAllowed value="false" />
-    <Editable value="false" />
+    <!-- Editable must be true or the system editor never offers the
+         complication slots, on the watch or in the phone app. -->
+    <Editable value="true" />
+    <!-- Lets people keep several configured versions as separate favorites. -->
+    <MultipleInstancesAllowed value="true" />
 </WatchFaceInfo>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 450" width="450" height="450">
+  <!--
+    Day Arc — ambient (always-on), sun set, 22:15.
+
+    Same drawing as day-arc-ambient-1009.svg with the clock moved on:
+
+      angle = (80100 / 240) + 180 = 513.75  ->  153.75 deg
+      sun   = (225 + 173*sin, 225 - 173*cos) = (301.5, 380.2)
+
+    The planet's surface at x=301.5 sits at y=298, so the sun ring is below
+    it and the black ellipse occludes it. This is why the ambient earth is
+    filled rather than hidden — the sun has to actually set.
+  -->
+  <defs>
+    <clipPath id="disc"><circle cx="225" cy="225" r="225"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#disc)">
+    <rect width="450" height="450" fill="#000000"/>
+
+    <path d="M52,225 A173,173 0 0 1 398,225" fill="none"
+          stroke="#FFFFFF" stroke-opacity="0.118" stroke-width="2"
+          stroke-dasharray="3 9" stroke-linecap="round"/>
+
+    <!-- sun, below the horizon and about to be occluded -->
+    <circle cx="301.5" cy="380.2" r="19" fill="none"
+            stroke="#E0CFA8" stroke-width="3"/>
+
+    <text x="225" y="205" text-anchor="middle"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+          font-size="70" font-weight="100" letter-spacing="-2" fill="#B8C0CA">22:15</text>
+
+    <ellipse cx="225" cy="1019" rx="600" ry="727" fill="#000000"/>
+    <ellipse cx="225" cy="1019" rx="600" ry="727" fill="none"
+             stroke="#FFD9A0" stroke-opacity="0.431" stroke-width="2"/>
+  </g>
+</svg>

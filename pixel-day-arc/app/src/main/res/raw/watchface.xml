@@ -19,6 +19,19 @@
        sun. At night the warm end is buried behind the ground ellipse and
        only the deep blue end is visible. One rotation drives everything.
 
+    4. Ambient is a separate drawing, not a dimmed one. Dimming a filled
+       sun still leaves a filled disc, which is the wrong shape and the
+       wrong power budget. So the always-on face has its own elements:
+       an outlined sun, a hairline horizon, thin numerals, pure black
+       everywhere else. WFF's Variant only knows AMBIENT, so ambient-only
+       parts sit at alpha="0" and are raised to 255 by their Variant,
+       while interactive-only parts do the reverse.
+
+       Roughly 3% of the disc is lit in ambient. Black is genuinely off
+       on this display, which is also why the ambient earth is filled
+       solid black rather than hidden — it costs nothing and it occludes
+       the sun once it drops below the horizon.
+
   Canvas is 450x450. Safe zone is r=198 from centre (0.88 of the radius);
   nothing readable crosses it.
 
@@ -40,11 +53,13 @@
         <Group name="sky_and_sun" x="0" y="0" width="450" height="450"
                pivotX="0.5" pivotY="0.5">
 
+            <!-- One rotation, shared by every version of the sun. The group
+                 itself stays visible in ambient; its children decide. -->
             <Transform target="angle" value="([SECONDS_IN_DAY] / 240) + 180" />
-            <Variant mode="AMBIENT" target="alpha" value="0" />
 
             <!-- The atmosphere. Warm end at local top, i.e. at the sun. -->
             <PartDraw name="sky" x="0" y="0" width="450" height="450">
+                <Variant mode="AMBIENT" target="alpha" value="0" />
                 <Ellipse x="0" y="0" width="450" height="450">
                     <Fill color="#5081B4">
                         <LinearGradient
@@ -62,6 +77,7 @@
               fewer moving parts, identical result at this size.
             -->
             <PartDraw name="sun" x="0" y="0" width="450" height="450">
+                <Variant mode="AMBIENT" target="alpha" value="0" />
                 <Ellipse x="163" y="-10" width="124" height="124">
                     <Fill color="#1EFFD08A" />
                 </Ellipse>
@@ -76,6 +92,19 @@
                 </Ellipse>
             </PartDraw>
 
+            <!--
+              Ambient sun: the same disc, drawn as a ring instead of a fill.
+              Same centre and radius as the interactive one, so it doesn't
+              jump when the screen wakes. Invisible until AMBIENT raises it.
+            -->
+            <PartDraw name="sun_ambient" x="0" y="0" width="450" height="450"
+                      alpha="0">
+                <Variant mode="AMBIENT" target="alpha" value="255" />
+                <Ellipse x="206" y="33" width="38" height="38">
+                    <Stroke color="#FFE0CFA8" thickness="3" />
+                </Ellipse>
+            </PartDraw>
+
         </Group>
 
         <!--
@@ -84,7 +113,9 @@
           top to sunset at 3 o'clock (90). Same radius as the sun's orbit.
         -->
         <PartDraw name="track" x="0" y="0" width="450" height="450">
-            <Variant mode="AMBIENT" target="alpha" value="90" />
+            <!-- Stroke is already 20% white, so this lands at ~12% in
+                 ambient. Part alpha multiplies the stroke's own alpha. -->
+            <Variant mode="AMBIENT" target="alpha" value="150" />
             <Arc centerX="225" centerY="225" width="346" height="346"
                  startAngle="270" endAngle="90" direction="CLOCKWISE">
                 <Stroke color="#33FFFFFF" thickness="2" cap="ROUND"
@@ -113,9 +144,23 @@
             </Ellipse>
         </PartDraw>
 
-        <!-- Horizon glow. Survives into ambient as the only landscape cue. -->
+        <!--
+          The same planet in ambient, filled pure black. On OLED those pixels
+          are off, so this is free — and it still occludes the sun ring once
+          the sun drops below the horizon, which a hidden earth would not.
+        -->
+        <PartDraw name="earth_ambient" x="0" y="0" width="450" height="450"
+                  alpha="0">
+            <Variant mode="AMBIENT" target="alpha" value="255" />
+            <Ellipse x="-375" y="292" width="1200" height="1454">
+                <Fill color="#FF000000" />
+            </Ellipse>
+        </PartDraw>
+
+        <!-- Horizon. The one landscape cue that survives into ambient. -->
         <PartDraw name="horizon" x="0" y="0" width="450" height="450">
-            <Variant mode="AMBIENT" target="alpha" value="160" />
+            <!-- Stroke alpha is 55%, so this lands at ~43% in ambient. -->
+            <Variant mode="AMBIENT" target="alpha" value="200" />
             <Ellipse x="-375" y="292" width="1200" height="1454">
                 <Stroke color="#8CFFD9A0" thickness="2" />
             </Ellipse>
@@ -126,9 +171,27 @@
           Sits in the sky, not in a band cut out of it.
         -->
         <PartText name="time" x="0" y="140" width="450" height="86">
-            <Variant mode="AMBIENT" target="alpha" value="190" />
+            <Variant mode="AMBIENT" target="alpha" value="0" />
             <Text align="CENTER">
                 <Font family="SYNC_TO_DEVICE" size="70" weight="LIGHT" color="#FFFFFF">
+                    <Template><![CDATA[%s:%s]]>
+                        <Parameter expression="[HOUR_0_23_Z]" />
+                        <Parameter expression="[MINUTE_Z]" />
+                    </Template>
+                </Font>
+            </Text>
+        </PartText>
+
+        <!--
+          Ambient time. Same box, same size, so the numerals stay put when the
+          screen wakes — only the stroke thins and the white cools. THIN at
+          this size is most of the ambient pixel budget on its own.
+        -->
+        <PartText name="time_ambient" x="0" y="140" width="450" height="86"
+                  alpha="0">
+            <Variant mode="AMBIENT" target="alpha" value="255" />
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="70" weight="THIN" color="#FFB8C0CA">
                     <Template><![CDATA[%s:%s]]>
                         <Parameter expression="[HOUR_0_23_Z]" />
                         <Parameter expression="[MINUTE_Z]" />

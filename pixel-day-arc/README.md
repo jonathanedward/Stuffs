@@ -31,6 +31,42 @@ around a shrunken screen.
 the horizon curve, the sun track and the time, and drops everything else. A
 concept that can't survive that isn't finished.
 
+## Ambient
+
+| Sun up — 10:09 | Sun set — 22:15 |
+|---|---|
+| ![Ambient, sun up](design/ambient-1009.png) | ![Ambient, sun set](design/ambient-2215.png) |
+
+Ambient is a **separate drawing, not a dimmed one**. Dimming a filled sun still
+leaves a filled disc — the wrong shape and the wrong power budget. So the
+always-on face has its own elements: the sun becomes a ring, the numerals go
+`THIN` and cool, the sky and the earth's gradient disappear entirely, and the
+horizon survives as a hairline. The sun keeps its orbit, at the same centre and
+radius, so nothing jumps when the screen wakes.
+
+WFF's `<Variant>` only knows one mode, `AMBIENT`, so there's no "interactive"
+variant to switch on. The idiom is to invert the default instead — ambient-only
+parts sit at `alpha="0"` and get raised:
+
+```xml
+<PartDraw name="sun_ambient" alpha="0" ...>
+    <Variant mode="AMBIENT" target="alpha" value="255" />
+    <Ellipse x="206" y="33" width="38" height="38">
+        <Stroke color="#FFE0CFA8" thickness="3" />
+    </Ellipse>
+</PartDraw>
+```
+
+The ambient earth is **filled solid black rather than hidden**, which looks like
+a waste until you notice the second image: the sun has to actually *set*. A
+hidden earth would let the ring show through at night. On OLED those pixels are
+off, so the occluder costs nothing.
+
+Around 3% of the disc is lit in ambient, nearly all of it the numerals. Part
+`alpha` multiplies the stroke's own alpha rather than replacing it, so the
+ambient values are chosen backwards from the effective ones — the track's stroke
+is already 20% white, so `alpha="150"` lands it at ~12%.
+
 ## One thing worth knowing up front
 
 **Wear OS has no sunrise or sunset data source.** The full list of Watch Face
@@ -115,10 +151,14 @@ pixel-day-arc/
 │       ├── xml/watch_face_info.xml
 │       ├── drawable/preview.png       rendered from design/
 │       └── values/strings.xml
-├── design/day-arc-1009.svg            geometry source of truth
+├── design/
+│   ├── day-arc-1009.svg               geometry source of truth
+│   ├── day-arc-ambient-1009.svg       always-on, sun up
+│   ├── day-arc-ambient-2215.svg       always-on, sun set
+│   └── ambient-*.png                  rendered from the two above
 └── tools/
     ├── validate.sh                    XSD validation
-    └── render-preview.mjs             SVG -> preview.png
+    └── render-preview.mjs             SVG -> PNG for all three
 ```
 
 `design/day-arc-1009.svg` is not decoration — every number in it has a
@@ -138,8 +178,9 @@ node tools/render-preview.mjs
 - **Configurable complications.** Steps and battery are fixed. Real complication
   slots would let people choose, but the arc then has to tolerate any string
   length people drop into it.
-- **Ambient could go further.** It currently dims and hides; an outlined sun on
-  pure black would be more striking and use less power.
+- **Burn-in.** The ambient numerals sit in a fixed spot. Wear OS shifts the
+  whole face periodically to compensate, but if it proves insufficient the time
+  could drift a few pixels on a slow cycle of its own.
 - **Preview font.** `preview.png` renders through the container's default sans,
   not the watch's system font, so it isn't pixel-exact. Replace it with a real
   screenshot once the face runs on hardware.

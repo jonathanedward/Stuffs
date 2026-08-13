@@ -36,23 +36,31 @@ try {
   process.exit(1);
 }
 
-const svgPath = resolve(root, 'design/day-arc-1009.svg');
-const outPath = resolve(root, 'app/src/main/res/drawable/preview.png');
-
-const html = `<!doctype html><meta charset="utf-8">
-<style>
-  html,body{margin:0;padding:0;background:transparent;overflow:hidden}
-  svg{display:block;width:450px;height:450px}
-</style>
-${readFileSync(svgPath, 'utf8')}`;
+// The interactive face is the watch face's own preview drawable; the ambient
+// renders live in design/ as documentation of the always-on state.
+const jobs = [
+  ['design/day-arc-1009.svg',         'app/src/main/res/drawable/preview.png'],
+  ['design/day-arc-ambient-1009.svg', 'design/ambient-1009.png'],
+  ['design/day-arc-ambient-2215.svg', 'design/ambient-2215.png'],
+];
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
   viewport: { width: 450, height: 450 },
   deviceScaleFactor: 1,
 });
-await page.setContent(html, { waitUntil: 'load' });
-await page.screenshot({ path: outPath, omitBackground: true });
-await browser.close();
 
-console.log(`wrote ${outPath}`);
+for (const [svg, out] of jobs) {
+  const html = `<!doctype html><meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+  svg{display:block;width:450px;height:450px}
+</style>
+${readFileSync(resolve(root, svg), 'utf8')}`;
+
+  await page.setContent(html, { waitUntil: 'load' });
+  await page.screenshot({ path: resolve(root, out), omitBackground: true });
+  console.log(`wrote ${out}`);
+}
+
+await browser.close();

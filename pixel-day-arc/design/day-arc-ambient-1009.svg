@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 450" width="450" height="450">
+  <!--
+    Day Arc — ambient (always-on), sun up, 10:09.
+
+    Opacities here are the *effective* ones, i.e. the stroke's own alpha
+    multiplied by the part alpha its AMBIENT Variant sets:
+
+      track    0.20 white  x  150/255  = 0.118
+      horizon  0.55 warm   x  200/255  = 0.431
+      sun ring  opaque     x  255/255  = 1.0
+
+    Roughly 3% of the disc is lit. Everything else is true black, which on
+    this display means the pixels are off.
+  -->
+  <defs>
+    <clipPath id="disc"><circle cx="225" cy="225" r="225"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#disc)">
+    <rect width="450" height="450" fill="#000000"/>
+
+    <!-- sun track, barely there -->
+    <path d="M52,225 A173,173 0 0 1 398,225" fill="none"
+          stroke="#FFFFFF" stroke-opacity="0.118" stroke-width="2"
+          stroke-dasharray="3 9" stroke-linecap="round"/>
+
+    <!-- the sun as a ring, same centre and radius as the interactive disc -->
+    <circle cx="144.3" cy="72.0" r="19" fill="none"
+            stroke="#E0CFA8" stroke-width="3"/>
+
+    <!-- time: same box and size as interactive, thinner and cooler -->
+    <text x="225" y="205" text-anchor="middle"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+          font-size="70" font-weight="100" letter-spacing="-2" fill="#B8C0CA">10:09</text>
+
+    <!-- the planet, filled pure black: free on OLED, and it still occludes -->
+    <ellipse cx="225" cy="1019" rx="600" ry="727" fill="#000000"/>
+    <ellipse cx="225" cy="1019" rx="600" ry="727" fill="none"
+             stroke="#FFD9A0" stroke-opacity="0.431" stroke-width="2"/>
+  </g>
+</svg>

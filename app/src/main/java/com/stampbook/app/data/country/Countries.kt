@@ -235,6 +235,8 @@ object Countries {
         c("VU", "Vanuatu", OCEANIA, -15.38, 166.96),
 
         // ---- Territories and dependencies (stampable, but not counted as countries) ----
+        // Centroids below the Antarctica line were computed from the boundary
+        // outlines in world.sbw rather than typed in by hand.
         c("AW", "Aruba", NORTH_AMERICA, 12.52, -69.97, sovereign = false),
         c("BM", "Bermuda", NORTH_AMERICA, 32.32, -64.75, sovereign = false),
         c("KY", "Cayman Islands", NORTH_AMERICA, 19.31, -81.25, sovereign = false),
@@ -251,6 +253,32 @@ object Countries {
         c("GU", "Guam", OCEANIA, 13.44, 144.79, sovereign = false),
         c("NC", "New Caledonia", OCEANIA, -20.90, 165.62, sovereign = false),
         c("AQ", "Antarctica", ANTARCTICA, -75.25, 0.07, sovereign = false),
+        c("AS", "American Samoa", OCEANIA, -14.31, -170.71, sovereign = false),
+        c("AI", "Anguilla", NORTH_AMERICA, 18.20, -63.08, sovereign = false),
+        c("IO", "British Indian Ocean Territory", AFRICA, -7.35, 72.44, sovereign = false),
+        c("VG", "British Virgin Islands", NORTH_AMERICA, 18.41, -64.64, sovereign = false),
+        c("CK", "Cook Islands", OCEANIA, -21.24, -159.79, sovereign = false),
+        c("FK", "Falkland Islands", SOUTH_AMERICA, -51.74, -58.78, sovereign = false),
+        c("TF", "French Southern and Antarctic Lands", ANTARCTICA, -49.30, 69.52, sovereign = false),
+        c("GG", "Guernsey", EUROPE, 49.48, -2.58, sovereign = false),
+        c("HM", "Heard Island and McDonald Islands", ANTARCTICA, -53.09, 73.52, sovereign = false),
+        c("IM", "Isle of Man", EUROPE, 54.21, -4.53, sovereign = false),
+        c("JE", "Jersey", EUROPE, 49.23, -2.16, sovereign = false),
+        c("MS", "Montserrat", NORTH_AMERICA, 16.75, -62.19, sovereign = false),
+        c("NU", "Niue", OCEANIA, -19.06, -169.87, sovereign = false),
+        c("NF", "Norfolk Island", OCEANIA, -29.06, 167.95, sovereign = false),
+        c("MP", "Northern Mariana Islands", OCEANIA, 15.19, 145.74, sovereign = false),
+        c("PN", "Pitcairn Islands", OCEANIA, -24.36, -128.31, sovereign = false),
+        c("BL", "Saint Barthelemy", NORTH_AMERICA, 17.90, -62.85, sovereign = false),
+        c("SH", "Saint Helena, Ascension and Tristan da Cunha", AFRICA, -15.97, -5.73, sovereign = false),
+        c("MF", "Saint Martin", NORTH_AMERICA, 18.07, -63.07, sovereign = false),
+        c("PM", "Saint Pierre and Miquelon", NORTH_AMERICA, 46.95, -56.33, sovereign = false),
+        c("SX", "Sint Maarten", NORTH_AMERICA, 18.07, -63.07, sovereign = false),
+        c("GS", "South Georgia", ANTARCTICA, -54.35, -36.71, sovereign = false),
+        c("TC", "Turks and Caicos Islands", NORTH_AMERICA, 21.80, -72.27, sovereign = false),
+        c("WF", "Wallis and Futuna", OCEANIA, -14.29, -178.12, sovereign = false),
+        c("EH", "Western Sahara", AFRICA, 24.22, -12.21, sovereign = false),
+        c("AX", "Aland Islands", EUROPE, 60.23, 19.94, sovereign = false),
     ).sortedBy { it.name }
 
     private val byCode: Map<String, Country> = all.associateBy { it.code }

@@ -36,7 +36,7 @@ class CountryCatalogueTest {
     @Test fun sovereignCountCoversTheWorld() {
         // 193 UN members plus Palestine, Vatican City and Kosovo.
         assertEquals(196, Countries.sovereignCount)
-        assertEquals(212, Countries.all.size)
+        assertEquals(238, Countries.all.size)
     }
 
     @Test fun flagsDeriveFromCodes() {

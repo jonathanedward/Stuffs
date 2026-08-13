@@ -18,10 +18,10 @@ forever.
 date range and notes. Stamps can also stand alone; those show up under "Not in
 a trip" so nothing gets lost.
 
-**Map** — every country in the catalogue is a dot, the ones you have stamped
-burn brighter, and each trip is drawn as an arc through its stops in order.
-Pinch to zoom, drag to pan. Underneath: your share of the world, and progress
-per continent.
+**Map** — the world with its borders drawn, every country you have stamped
+filled in, and each trip traced as an arc through its stops in order. Pinch to
+zoom, drag to pan. Underneath: your share of the world, and progress per
+continent.
 
 ## Building
 
@@ -42,15 +42,19 @@ Open in Android Studio, or from the command line with an Android SDK installed:
 
 ```
 core/            pure logic, no Android imports — projection, stamp styling
-data/country/    the offline place catalogue (212 places, 196 sovereign)
+data/country/    the offline place catalogue (238 places, 196 sovereign)
+data/world/      reader for the packed country outlines
 data/local/      Room entities, DAOs, database
 data/model/      domain types and the stats calculation
 ui/stamp/        the stamp renderer (Canvas + native text-on-path)
 ui/passport/     the book
 ui/trips/        trip list, detail, editor
-ui/map/          the constellation map
+ui/map/          the world map
 ui/add/          the stamping flow
 nav/             routes and the app shell
+
+assets/world.sbw            packed country outlines, 68 KB
+tools/build_world_asset.py  rebuilds that asset from Natural Earth
 ```
 
 Flag emoji are derived from ISO 3166-1 alpha-2 codes as regional indicator
@@ -58,24 +62,48 @@ pairs rather than stored, so the catalogue stays a plain table of code, name,
 continent and centroid.
 
 Country counts use 196 sovereign states as the denominator (193 UN members plus
-Palestine, Vatican City and Kosovo). Territories such as Hong Kong, Puerto Rico
-and Greenland can be stamped but are counted separately, so visiting Guam does
-not claim a country you have not been to.
+Palestine, Vatican City and Kosovo). The other 42 entries — Hong Kong, Puerto
+Rico, Greenland, the Falklands and the like — can be stamped but are counted
+separately, so visiting Guam does not claim a country you have not been to.
 
 ## Design notes
 
-**Why a dot map and not a filled-in choropleth.** Colouring country shapes needs
-country polygons — several megabytes of boundary data, or a network map tile
-service. Both fight the offline-first goal. Dots at country centroids plus route
-arcs give you the same "look how far I have been" read at a fraction of the
-size, and the routes are something a choropleth cannot show at all. Swapping in
-real polygons later only touches `ui/map/WorldMap.kt`; nothing else knows the
-map's shape.
+**Why the outlines are packed by hand.** Filling in countries needs boundary
+data, and the obvious routes to it are both bad here: a map tile service breaks
+offline-first, and shipping GeoJSON means parsing a megabyte of JSON at startup.
+Natural Earth 1:50m is only about 80,000 points before simplification, so
+`tools/build_world_asset.py` reduces it with Douglas-Peucker, quantises to a
+hundredth of a degree, delta-encodes with varints, and writes a flat binary.
+The result is 238 outlines and roughly 27,000 points in 68 KB, read once on a
+background thread with no JSON parser involved.
+
+Monaco and Singapore do have outlines at this resolution; the Vatican has none
+at any resolution Natural Earth ships, so it falls back to a dot at its
+centroid and stays stampable. Two disputed boundaries in the source data
+(Northern Cyprus, Somaliland) carry no ISO code; they are drawn but never
+highlighted.
+
+The catalogue's 42 territories are stampable but excluded from the country
+count, so a trip to the Falklands or the Isle of Man shows on the map without
+claiming a country. Their centroids were computed from the boundary outlines
+rather than typed in.
 
 **Why stamps are generated, not drawn.** Shipping artwork for 200 countries is
 not realistic, and a list of rows is not something anyone screenshots. Deriving
 the look from a stored seed means the passport feels hand-collected while the
 data stays a plain table.
+
+## Data
+
+Country outlines are Natural Earth 1:50m, in the public domain, taken from the
+`world-atlas` package; the numeric-to-ISO mapping comes from `world-countries`.
+Neither is a runtime dependency — they are inputs to
+`tools/build_world_asset.py`, which is run by hand when the source data changes:
+
+```
+npm pack world-atlas@2.0.2 world-countries@5.0.0
+python3 tools/build_world_asset.py <extracted-dir>
+```
 
 ## Not built yet
 

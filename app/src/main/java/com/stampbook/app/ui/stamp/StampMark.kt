@@ -131,7 +131,7 @@ private fun DrawScope.drawStamp(style: StampStyle, ink: Color, text: StampText) 
     }
 
     val curvedHeader = style.shape == StampShape.CIRCLE || style.shape == StampShape.SCALLOP
-    val ceiling = if (curvedHeader) radius * 0.74f else radius * 0.5f
+    val ceiling = if (curvedHeader) radius * 0.74f else radius * 0.46f
 
     // Header: hugs the ring on round stamps, sits flat on angular ones.
     if (text.top.isNotEmpty()) {
@@ -161,13 +161,18 @@ private fun DrawScope.drawStamp(style: StampStyle, ink: Color, text: StampText) 
     if (text.bottom.isNotEmpty()) {
         val bottomPaint = inkPaint(ink, extent * 0.06f, bold = false, spacing = 0.2f)
         fitToWidth(bottomPaint, text.bottom, radius * 1.2f, extent * 0.04f)
-        drawNativeText(text.bottom, cx, cy + radius * 0.72f, bottomPaint)
+        drawNativeText(text.bottom, cx, cy + style.shape.footerOffset() * radius, bottomPaint)
     }
 
-    // Little stars flanking the place name, like a real border stamp.
+    // Little stars flanking the place name, like a real border stamp. They start
+    // outside whatever width the name ended up needing, and are dropped rather than
+    // drawn over the border once they run out of room.
+    val starRadius = extent * 0.022f
+    val halfName = centerPaint.measureText(text.center) / 2f
+    val starLimit = style.shape.sideRoom() * radius
     repeat(style.starCount) { index ->
-        val offsetX = radius * (0.62f + index * 0.11f)
-        val starRadius = extent * 0.022f
+        val offsetX = halfName + extent * 0.055f + index * extent * 0.05f
+        if (offsetX + starRadius > starLimit) return@repeat
         listOf(cx - offsetX, cx + offsetX).forEach { x ->
             drawPath(starPath(Offset(x, cy), starRadius, starRadius * 0.42f), ink)
         }
@@ -186,6 +191,22 @@ private fun DrawScope.drawInkWear(style: StampStyle) {
             blendMode = BlendMode.Clear,
         )
     }
+}
+
+/** How far down the footer line can sit before it meets the outline, as a fraction of the radius. */
+private fun StampShape.footerOffset(): Float = when (this) {
+    StampShape.CIRCLE -> 0.72f
+    StampShape.SCALLOP -> 0.64f
+    StampShape.RECTANGLE -> 0.52f
+    StampShape.HEXAGON -> 0.58f
+}
+
+/** Half-width available on the centre line, as a fraction of the radius. */
+private fun StampShape.sideRoom(): Float = when (this) {
+    StampShape.CIRCLE -> 0.88f
+    StampShape.SCALLOP -> 0.78f
+    StampShape.RECTANGLE -> 0.86f
+    StampShape.HEXAGON -> 0.74f
 }
 
 private fun DrawScope.drawRoundedBox(center: Offset, halfW: Float, halfH: Float, ink: Color, stroke: Float) {

@@ -4,9 +4,11 @@ import com.stampbook.app.core.BorderStyle
 import com.stampbook.app.core.DesignRegion
 import com.stampbook.app.core.Projection
 import com.stampbook.app.core.Scripts
+import com.stampbook.app.core.TextScript
 import com.stampbook.app.core.StampDesign
 import com.stampbook.app.core.StampDevice
 import com.stampbook.app.core.StampLayout
+import com.stampbook.app.core.StampFace
 import com.stampbook.app.core.StampShape
 import com.stampbook.app.core.StampStyles
 import com.stampbook.app.data.country.Countries
@@ -225,9 +227,47 @@ class StampDesignTest {
             }
     }
 
+    @Test fun everyCountryIsSetInAFaceThatCanSpellIt() {
+        Countries.all.forEach {
+            val traits = CountryDetails[it.code]
+            val design = StampStyles.forCountry(traits)
+            if (Scripts.scriptOf(traits.nativeName) == TextScript.GREEK_OR_CYRILLIC) {
+                // Only two of the three bundled faces carry those scripts.
+                assertTrue(
+                    design.face.coversEuropeanScripts,
+                    "${it.code} sets ${traits.nativeName} in ${design.face}",
+                )
+            }
+        }
+    }
+
+    @Test fun everyFaceIsUsedSomewhere() {
+        val used = Countries.all.map { StampStyles.forCountry(CountryDetails[it.code]).face }
+        assertEquals(StampFace.entries.toSet(), used.toSet())
+        // And the grotesque should read as the European register, not the default.
+        val european = Countries.all
+            .filter { CountryDetails[it.code].region == DesignRegion.EUROPE }
+            .count { StampStyles.forCountry(CountryDetails[it.code]).face == StampFace.INSTITUTIONAL }
+        assertTrue(european > 20, "only $european European countries use the grotesque")
+    }
+
+    @Test fun scriptsAreSortedByWhatCanSetThem() {
+        assertEquals(TextScript.LATIN, Scripts.scriptOf("ESPAÑA"))
+        assertEquals(TextScript.LATIN, Scripts.scriptOf("VIỆT NAM"), "Vietnamese is Latin")
+        assertEquals(TextScript.LATIN, Scripts.scriptOf("TÜRKİYE"))
+        assertEquals(TextScript.GREEK_OR_CYRILLIC, Scripts.scriptOf("ΕΛΛΑΔΑ"))
+        assertEquals(TextScript.GREEK_OR_CYRILLIC, Scripts.scriptOf("РОССИЯ"))
+        // Left to the device, whose serif is the formal register in each.
+        assertEquals(TextScript.OTHER, Scripts.scriptOf("日本"))
+        assertEquals(TextScript.OTHER, Scripts.scriptOf("한국"))
+        assertEquals(TextScript.OTHER, Scripts.scriptOf("مصر"))
+        assertEquals(TextScript.OTHER, Scripts.scriptOf("ประเทศไทย"))
+    }
+
     @Test fun everyRegionOffersOnlyWorkableCombinations() {
         DesignRegion.entries.forEach { region ->
             assertTrue(region.looks.isNotEmpty(), "$region has no looks")
+            assertTrue(region.faces.isNotEmpty(), "$region has no faces")
             region.looks.forEach { (shape, layout) ->
                 val needsRound = layout == StampLayout.ARCH || layout == StampLayout.DATE_ARCH
                 val needsAngular = layout == StampLayout.SPLIT || layout == StampLayout.FORM

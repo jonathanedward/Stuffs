@@ -47,7 +47,6 @@ import kotlin.random.Random
 import android.graphics.Paint as NativePaint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.graphics.Typeface
 
 private val STAMP_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
 
@@ -98,6 +97,7 @@ fun StampMark(
         stamp.copy(design, impression)
     }
     val ink = Color(design.inkArgb)
+    val fonts = rememberStampFonts()
 
     Canvas(
         modifier = modifier
@@ -110,7 +110,7 @@ fun StampMark(
                 compositingStrategy = CompositingStrategy.Offscreen
             },
     ) {
-        drawStamp(design, impression, ink, copy)
+        drawStamp(design, impression, ink, copy, fonts)
     }
 }
 
@@ -119,6 +119,7 @@ private fun DrawScope.drawStamp(
     impression: StampImpression,
     ink: Color,
     copy: Copy,
+    fonts: StampFonts,
 ) {
     val extent = min(size.width, size.height)
     val cx = size.width / 2f
@@ -129,7 +130,7 @@ private fun DrawScope.drawStamp(
 
     drawBorder(design, outline, ink, stroke, cx, cy, radius)
 
-    val frame = Frame(design, ink, cx, cy, radius, extent, outline)
+    val frame = Frame(design, ink, cx, cy, radius, extent, outline, fonts)
     when (design.layout) {
         StampLayout.ARCH -> frame.arch(this, copy)
         StampLayout.DATE_ARCH -> frame.dateArch(this, copy)
@@ -324,17 +325,23 @@ private class Frame(
     val radius: Float,
     val extent: Float,
     val outline: Path,
+    val fonts: StampFonts,
 ) {
     private val argb = ink.toArgb()
 
-    private fun paint(scale: Float, bold: Boolean, spacing: Float) =
-        NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-            color = argb
-            textSize = extent * scale
-            letterSpacing = spacing
-            textAlign = NativePaint.Align.CENTER
-            typeface = Typeface.create(Typeface.SERIF, if (bold) Typeface.BOLD else Typeface.NORMAL)
-        }
+    private fun paint(
+        scale: Float,
+        bold: Boolean,
+        spacing: Float,
+        text: String,
+        mono: Boolean = false,
+    ) = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+        color = argb
+        textSize = extent * scale
+        letterSpacing = spacing
+        textAlign = NativePaint.Align.CENTER
+        typeface = if (mono) fonts.typewriter else fonts.typeface(design.face, bold, text)
+    }
 
     /** The radius text has to live inside: the innermost line of the border. */
     private val inner = radius * design.border.contentInset
@@ -364,11 +371,12 @@ private class Frame(
         bold: Boolean = false,
         spacing: Float = 0.1f,
         floor: Float = 0.042f,
+        mono: Boolean = false,
         x: Float = cx,
         width: Float = roomAt(dy + if (dy < 0) -extent * scale * 0.7f else 0f),
     ): NativePaint? {
         if (text.isEmpty()) return null
-        val paint = paint(scale, bold, spacing)
+        val paint = paint(scale, bold, spacing, text, mono)
         fit(paint, text, width, extent * floor)
         drawIntoCanvas { it.nativeCanvas.drawText(text, x, cy + dy * squeeze, paint) }
         return paint
@@ -397,7 +405,7 @@ private class Frame(
 
     private fun DrawScope.arc(text: String, arcRadius: Float, scale: Float, bottom: Boolean) {
         if (text.isEmpty()) return
-        val paint = paint(scale, bold = true, spacing = 0.14f)
+        val paint = paint(scale, bold = true, spacing = 0.14f, text = text)
         // The arc itself is the width limit here, not the outline.
         while (paint.textSize > extent * 0.042f &&
             paint.measureText(text) / arcRadius > PI.toFloat() * 0.86f
@@ -497,7 +505,7 @@ private class Frame(
             )
         }
         // Knocked out of the band, so the paper shows through the letters.
-        val knockout = paint(0.125f, bold = true, spacing = 0.03f).apply {
+        val knockout = paint(0.125f, bold = true, spacing = 0.03f, text = copy.place).apply {
             xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
         }
         fit(knockout, copy.place, roomAt(0f, 0.78f), extent * 0.055f)
@@ -522,6 +530,7 @@ private class Frame(
             scale = 0.052f,
             bold = true,
             spacing = 0.1f,
+            mono = true,
             x = deviceX,
             width = radius * 0.5f,
         )
@@ -551,7 +560,7 @@ private class Frame(
         line(copy.place, extent * 0.010f, 0.135f, bold = true, spacing = 0.02f, floor = 0.056f)
         line(copy.date, extent * 0.125f, 0.066f)
         line(copy.label, extent * 0.205f, 0.052f, spacing = 0.16f)
-        line(copy.serial, extent * 0.280f, 0.044f, spacing = 0.06f)
+        line(copy.serial, extent * 0.280f, 0.044f, spacing = 0.06f, mono = true)
     }
 }
 

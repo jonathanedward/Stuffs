@@ -35,4 +35,33 @@ object Scripts {
     /** True when this text must be laid out as a run rather than character by character. */
     fun needsShaping(text: String): Boolean =
         text.any { char -> SHAPED.any { char.code in it } }
+
+    private val GREEK_OR_CYRILLIC = listOf(
+        0x0370..0x03FF, // Greek
+        0x0400..0x04FF, // Cyrillic
+        0x0500..0x052F, // Cyrillic Supplement
+        0x1F00..0x1FFF, // Greek Extended
+    )
+
+    /**
+     * Which of the bundled faces can set this text. Latin covers the Vietnamese
+     * and Turkish accents too; anything past Greek and Cyrillic — CJK, Arabic,
+     * Thai, Devanagari — is left to the device, whose own serif lands on the
+     * formal register of each of those scripts.
+     */
+    fun scriptOf(text: String): TextScript {
+        var script = TextScript.LATIN
+        text.forEach { char ->
+            val code = char.code
+            when {
+                code < 0x0370 || code in 0x1E00..0x1EFF || code in 0x2000..0x206F -> Unit
+                GREEK_OR_CYRILLIC.any { code in it } ->
+                    if (script == TextScript.LATIN) script = TextScript.GREEK_OR_CYRILLIC
+                else -> return TextScript.OTHER
+            }
+        }
+        return script
+    }
 }
+
+enum class TextScript { LATIN, GREEK_OR_CYRILLIC, OTHER }

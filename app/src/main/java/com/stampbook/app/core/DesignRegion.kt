@@ -24,7 +24,30 @@ import com.stampbook.app.core.StampShape.SHIELD
  * Each entry is a list of whole shape-and-layout pairs rather than two separate
  * lists, so a country can never draw an arched heading on a rectangle.
  */
-enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
+/**
+ * The lettering a stamp is set in. Only three faces ship, because a font per
+ * country is not a thing that can exist — Noto's CJK families alone are larger
+ * than this whole app. What does hold is the register: which of these traditions
+ * a border post's lettering belongs to.
+ */
+enum class StampFace {
+    /** An old-style serif, the lettering of older and colonial-era border posts. */
+    DOCUMENTARY,
+
+    /** A grotesque. What a Schengen stamp is actually set in. */
+    INSTITUTIONAL,
+
+    /** A slab serif: the office-registry voice, and what US entry stamps favour. */
+    REGISTRY;
+
+    /** Only two of the three bundled faces carry Greek and Cyrillic. */
+    val coversEuropeanScripts: Boolean get() = this != INSTITUTIONAL
+}
+
+enum class DesignRegion(
+    val looks: List<Pair<StampShape, StampLayout>>,
+    val faces: List<StampFace>,
+) {
 
     EUROPE(
         listOf(
@@ -35,6 +58,8 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             RECTANGLE to STACKED,
             HEXAGON to STACKED,
         ),
+        // Schengen posts print a grotesque; older European posts, a slab.
+        faces = listOf(StampFace.INSTITUTIONAL, StampFace.INSTITUTIONAL, StampFace.REGISTRY),
     ),
 
     EAST_ASIA(
@@ -46,6 +71,9 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             RECTANGLE to BAND,
             CIRCLE to BAND,
         ),
+        // The Latin lines only: 日本 and 한국 are set by the device, whose serif
+        // is Mincho and Myeongjo — the formal register in both.
+        faces = listOf(StampFace.DOCUMENTARY, StampFace.REGISTRY),
     ),
 
     LEVANT(
@@ -57,6 +85,8 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             CIRCLE to BAND,
             OCTAGON to ARCH,
         ),
+        // Naskh, the documentary Arabic hand, sits with an old-style serif.
+        faces = listOf(StampFace.DOCUMENTARY, StampFace.DOCUMENTARY, StampFace.REGISTRY),
     ),
 
     MONSOON(
@@ -68,6 +98,7 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             HEXAGON to FORM,
             OVAL to ARCH,
         ),
+        faces = listOf(StampFace.DOCUMENTARY, StampFace.REGISTRY),
     ),
 
     AFRICA(
@@ -79,6 +110,8 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             SCALLOP to BAND,
             OCTAGON to ARCH,
         ),
+        // The serif officialdom left behind by British and French border posts.
+        faces = listOf(StampFace.DOCUMENTARY, StampFace.DOCUMENTARY, StampFace.REGISTRY),
     ),
 
     AMERICAS(
@@ -90,6 +123,7 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             CIRCLE to ARCH,
             RECTANGLE to FORM,
         ),
+        faces = listOf(StampFace.REGISTRY, StampFace.DOCUMENTARY),
     ),
 
     PACIFIC(
@@ -101,6 +135,7 @@ enum class DesignRegion(val looks: List<Pair<StampShape, StampLayout>>) {
             ROUNDED_RECT to SPLIT,
             OCTAGON to BAND,
         ),
+        faces = listOf(StampFace.INSTITUTIONAL, StampFace.REGISTRY),
     ),
 }
 

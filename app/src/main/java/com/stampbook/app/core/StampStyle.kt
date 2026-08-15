@@ -64,6 +64,8 @@ data class StampDesign(
     val alpha3: String,
     /** The country's name for itself, ready to print. */
     val countryName: String,
+    /** Which of the bundled letterforms this country's post sets its stamps in. */
+    val face: StampFace,
     val stars: Int,
     val cornerTicks: Boolean,
 )
@@ -105,6 +107,16 @@ object StampStyles {
             label = traits.entryWord,
             alpha3 = traits.alpha3,
             countryName = traits.nativeName,
+            // A face that cannot set the country's own name is no use to it.
+            face = traits.region.faces[pick.next(traits.region.faces.size)].let { picked ->
+                if (Scripts.scriptOf(traits.nativeName) == TextScript.GREEK_OR_CYRILLIC &&
+                    !picked.coversEuropeanScripts
+                ) {
+                    StampFace.REGISTRY
+                } else {
+                    picked
+                }
+            },
             stars = pick.next(4),
             // A shield has no bottom corners to tick, and the marks would land on
             // its taper.

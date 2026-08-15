@@ -38,6 +38,7 @@ Open in Android Studio, or from the command line with an Android SDK installed:
 
 - minSdk 26, compileSdk 35
 - Kotlin 2.0.21, Jetpack Compose (BOM 2024.12.01), Material 3
+- Four bundled typefaces, 1.5 MB in total
 - Room 2.6.1 for storage, Navigation Compose for routing
 - No dependency injection framework: the object graph is two DAOs and a
   repository, wired in `StampbookApplication`
@@ -73,6 +74,29 @@ Rico, Greenland, the Falklands and the like — can be stamped but are counted
 separately, so visiting Guam does not claim a country you have not been to.
 
 ## Design notes
+
+**Lettering.** A font per country cannot exist — Noto's CJK families alone are
+larger than this whole app — so the unit is the register a border post's
+lettering belongs to, which is what actually reads as national. Three faces
+ship, for Latin, Greek and Cyrillic:
+
+| Face | Used for |
+| --- | --- |
+| EB Garamond, old-style serif | older and colonial-era posts: Africa, the Levant, much of Asia and the Americas |
+| Archivo, grotesque | Europe, because that is what a Schengen stamp is set in |
+| Roboto Slab | the office-registry voice, and US entry stamps |
+| Cutive Mono | serial numbers and country codes, which a real stamp sets apart |
+
+Everything else is left to the device's own serif, and that is a choice rather
+than a shortfall. A serif CJK face is Mincho in Japan, Song in China and
+Myeongjo in Korea — in all three the formal register, where Gothic reads modern
+— and the device's Arabic serif is Naskh, the hand used for government
+documents. Thai resolves to a looped face, which is the register the Thai
+government prints in. Asking for a serif in those scripts lands on the right
+answer for free.
+
+Only two of the three bundled faces carry Greek and Cyrillic, so a country whose
+own name needs them is never assigned the third; a test holds that.
 
 **Why the outlines are packed by hand.** Filling in countries needs boundary
 data, and the obvious routes to it are both bad here: a map tile service breaks
@@ -143,7 +167,9 @@ node tools/build_country_details.mjs <extracted-dir>
 ```
 
 Stamp inks are sampled from the flag artwork in `flag-icons` (MIT); entry
-wording and ISO alpha-3 codes come from `world-countries` (MIT). Rasterising
+wording, endonyms and ISO alpha-3 codes come from `world-countries` (MIT).
+The bundled faces are EB Garamond, Archivo and Cutive Mono (SIL Open Font
+License) and Roboto Slab (Apache 2.0); their licences are in `licenses/`. Rasterising
 the flags needs a browser, so that generator runs under Playwright. Neither
 package is a runtime dependency — both feed a generated Kotlin table.
 

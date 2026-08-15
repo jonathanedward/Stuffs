@@ -7,10 +7,11 @@
  *
  *   node tools/build_country_details.mjs <dir-with-extracted-packages>
  *
- * Three traits come out of it:
- *   ink    the flag's dominant hue, muted into something that reads as stamp ink
- *   entry  the word a border post would actually print, in the country's language
- *   region which design family the country's stamp belongs to
+ * Four traits come out of it:
+ *   ink     the flag's dominant hue, muted into something that reads as stamp ink
+ *   entry   the word a border post would actually print, in the country's language
+ *   native  the country's name for itself, in that same language
+ *   region  which design family the country's stamp belongs to
  *
  * Rasterising the flags needs a browser, so this runs under Playwright rather
  * than as a plain script.
@@ -48,8 +49,8 @@ const ENTRY_WORD = {
  */
 const LANGUAGE_RANK = [
   'spa', 'fra', 'por', 'ara', 'rus', 'zho', 'deu', 'jpn', 'kor', 'ita', 'nld',
-  'tur', 'tha', 'vie', 'ind', 'msa', 'pol', 'ron', 'ell', 'ces', 'hun', 'swe',
-  'dan', 'nno', 'nob', 'fin', 'isl', 'est', 'lav', 'lit', 'slk', 'slv', 'hrv',
+  'tur', 'tha', 'vie', 'ind', 'msa', 'pol', 'ron', 'ell', 'ces', 'hun', 'fin',
+  'swe', 'dan', 'nob', 'nno', 'isl', 'est', 'lav', 'lit', 'slk', 'slv', 'hrv',
   'srp', 'bos', 'cnr', 'sqi', 'mkd', 'bul', 'ukr', 'bel', 'kaz', 'kir', 'mon',
   'hye', 'kat', 'fas', 'prs', 'aze', 'amh', 'khm', 'lao', 'ben', 'nep', 'hin',
   'afr', 'swa', 'crs', 'cat', 'kal', 'eng',
@@ -159,6 +160,14 @@ const { ink, missing } = await page.evaluate(async (flags) => {
 }, flags);
 await browser.close();
 
+/** Greek drops its accents when it goes to capitals. */
+function toStampCase(text, language) {
+  const upper = text.toLocaleUpperCase(language === 'tur' ? 'tr' : undefined);
+  return language === 'ell'
+    ? upper.replace(/[ΆΈΉΊΌΎΏΪΫ]/g, ch => 'ΑΕΗΙΟΥΩΙΥ'['ΆΈΉΊΌΎΏΪΫ'.indexOf(ch)])
+    : upper;
+}
+
 const rows = codes.map(code => {
   const meta = byCode[code];
   // world-countries lists languages alphabetically, which is meaningless: Peru
@@ -166,10 +175,16 @@ const rows = codes.map(code => {
   const spoken = Object.keys((meta && meta.languages) || {})
     .filter(code => ENTRY_WORD[code])
     .sort((a, b) => LANGUAGE_RANK.indexOf(a) - LANGUAGE_RANK.indexOf(b));
-  const entry = ENTRY_WORD[spoken[0]] || 'ENTRY';
+  const language = spoken[0];
+  const entry = ENTRY_WORD[language] || 'ENTRY';
+  // The country's name for itself, in the same language as the wording, so a
+  // stamp does not say ENTRÉE over an English country name.
+  const endonym = (meta && meta.name.native && meta.name.native[language]) || null;
+  const native = toStampCase((endonym && endonym.common) || (meta && meta.name.common) || code, language);
   const region = (meta && REGION[meta.subregion || meta.region]) || 'AMERICAS';
   const alpha3 = (meta && meta.cca3) || code;
-  return `        d("${code}", "${alpha3}", 0xFF${ink[code] || '2B2F36'}, "${entry}", ${region}),`;
+  const escaped = native.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\${'+"'$'"+'}');
+  return `        d("${code}", "${alpha3}", 0xFF${ink[code] || '2B2F36'}, "${entry}", "${escaped}", ${region}),`;
 });
 
 writeFileSync(KT_OUT, `package com.stampbook.app.data.country
@@ -193,8 +208,14 @@ import com.stampbook.app.core.DesignRegion.PACIFIC
  */
 object CountryDetails {
 
-    private fun d(code: String, alpha3: String, ink: Long, entry: String, region: DesignRegion) =
-        code to CountryTraits(code, alpha3, ink.toInt(), entry, region)
+    private fun d(
+        code: String,
+        alpha3: String,
+        ink: Long,
+        entry: String,
+        native: String,
+        region: DesignRegion,
+    ) = code to CountryTraits(code, alpha3, ink.toInt(), entry, native, region)
 
     private val byCode: Map<String, CountryTraits> = mapOf(
 ${rows.join('\n')}

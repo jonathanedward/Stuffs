@@ -12,9 +12,9 @@ the app works on a plane and in a country where your SIM does not.
 that is, then every stamp you have collected, newest year first. Every stamp is
 drawn at run time, and what makes it that country's stamp is taken from the
 country: the ink is its flag's dominant hue muted to something a rubber stamp
-could leave, the wording is what a border post there would print (上陸許可 in
-Japan, دخول in Morocco, ΕΙΣΟΔΟΣ in Greece), and the shape follows regional
-convention. The seed stored with each stamp decides only how that pressing came
+could leave, the country names itself in its own language and script (日本,
+ΕΛΛΑΔΑ, المغرب), the wording is what a border post there would print (上陸許可,
+دخول, ΕΙΣΟΔΟΣ), and the shape follows regional convention. The seed stored with each stamp decides only how that pressing came
 out: the angle it was banged down at, how much ink was on the pad, where the ink
 failed, and its serial.
 
@@ -102,14 +102,20 @@ Splitting the country's design from the pressing is what makes that work.
 Deriving everything from the stamp's own seed made all 238 look like variations
 on one rubber stamp. Keying the design to the country instead gives each
 authority its own, and the traits that matter are real rather than invented:
-flag-derived ink, an entry word in one of the country's official languages, its
-alpha-3 code, and a design family that follows what that part of the world
-actually prints. Only the border treatment, device and ornaments come from
+flag-derived ink, an entry word and the country's own name for itself in one of
+its official languages, its alpha-3 code, and a design family that follows what
+that part of the world actually prints. Only the border treatment, device and ornaments come from
 hashing the code. Over 90% of countries end up with a look no one else has, and
 a test holds that line.
 
 Design families are stored as whole shape-and-layout pairs rather than two
 independent lists, so a country can never draw an arched heading on a rectangle.
+
+The city keeps whatever script you typed it in, so every stamp has one line that
+is readable at a glance; with no city, that line falls back to the country's
+English name. Headings in a script that joins its letters or runs right to left
+are set straight instead of bent, because the arc places one character at a time
+and would pull Arabic apart — `core/Scripts.kt` decides which is which.
 
 Text is fitted against the outline rather than against fixed margins — each
 layout asks the shape how much room there is at that height, and the shape

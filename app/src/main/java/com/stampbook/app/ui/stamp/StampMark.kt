@@ -29,6 +29,7 @@ import com.stampbook.app.core.StampDesign
 import com.stampbook.app.core.StampDevice
 import com.stampbook.app.core.StampImpression
 import com.stampbook.app.core.StampLayout
+import com.stampbook.app.core.Scripts
 import com.stampbook.app.core.StampShape
 import com.stampbook.app.core.StampStyles
 import com.stampbook.app.data.country.CountryDetails
@@ -63,7 +64,8 @@ private class Copy(
 
 private fun Stamp.copy(design: StampDesign, impression: StampImpression): Copy {
     val hasCity = !city.isNullOrBlank()
-    val countryName = (country?.name ?: countryCode).uppercase(Locale.ENGLISH)
+    // Already cased for its own script by the generator, so it is printed as-is.
+    val countryName = design.countryName
     return Copy(
         // With no city the place line already says the country, so the slot that
         // would repeat it carries the authority's wording instead.
@@ -449,7 +451,11 @@ private class Frame(
     }
 
     fun arch(scope: DrawScope, copy: Copy) = with(scope) {
-        arc(copy.country, arcRadius(0.078f), 0.078f, bottom = false)
+        if (Scripts.needsShaping(copy.country)) {
+            line(copy.country, -extent * 0.255f, 0.075f, bold = true, spacing = 0.04f)
+        } else {
+            arc(copy.country, arcRadius(0.078f), 0.078f, bottom = false)
+        }
         if (design.device != StampDevice.NONE) {
             drawDevice(design.device, ink, Offset(cx, cy - extent * 0.185f), extent * 0.088f)
         }
@@ -464,7 +470,12 @@ private class Frame(
         val place = line(copy.place, extent * 0.03f, 0.150f, bold = true, spacing = 0.02f, floor = 0.062f)
         starsAround(place, copy.place, extent * 0.03f)
         line(copy.label, extent * 0.145f, 0.055f, spacing = 0.2f)
-        arc(if (copy.hasCity) copy.country else copy.place, arcRadius(0.068f), 0.068f, bottom = true)
+        val foot = if (copy.hasCity) copy.country else copy.place
+        if (Scripts.needsShaping(foot)) {
+            line(foot, extent * 0.275f, 0.066f, bold = true, spacing = 0.04f)
+        } else {
+            arc(foot, arcRadius(0.068f), 0.068f, bottom = true)
+        }
     }
 
     fun stacked(scope: DrawScope, copy: Copy) = with(scope) {

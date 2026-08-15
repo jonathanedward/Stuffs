@@ -3,6 +3,7 @@ package com.stampbook.app
 import com.stampbook.app.core.BorderStyle
 import com.stampbook.app.core.DesignRegion
 import com.stampbook.app.core.Projection
+import com.stampbook.app.core.Scripts
 import com.stampbook.app.core.StampDesign
 import com.stampbook.app.core.StampDevice
 import com.stampbook.app.core.StampLayout
@@ -150,6 +151,31 @@ class StampDesignTest {
         // A shared palette would repeat heavily across 238 countries; flags do not.
         val inks = Countries.all.map { CountryDetails[it.code].inkArgb }.distinct()
         assertTrue(inks.size > 150, "only ${inks.size} distinct inks")
+    }
+
+    @Test fun countriesAreNamedAsTheyNameThemselves() {
+        assertEquals("日本", CountryDetails["JP"].nativeName)
+        assertEquals("DEUTSCHLAND", CountryDetails["DE"].nativeName)
+        assertEquals("ΕΛΛΑΔΑ", CountryDetails["GR"].nativeName, "Greek drops accents in capitals")
+        assertEquals("РОССИЯ", CountryDetails["RU"].nativeName)
+        assertEquals("مصر", CountryDetails["EG"].nativeName)
+        assertEquals("TÜRKİYE", CountryDetails["TR"].nativeName, "Turkish capitalises i with its dot")
+        assertEquals("SUOMI", CountryDetails["FI"].nativeName)
+        Countries.all.forEach {
+            assertTrue(CountryDetails[it.code].nativeName.isNotBlank(), "${it.code} unnamed")
+        }
+    }
+
+    @Test fun headingsThatCannotBeBentAreRecognised() {
+        // Arabic joins its letters and runs right to left; drawn one character at
+        // a time around an arc it comes out disjointed and backwards.
+        listOf("مصر", "ประเทศไทย", "ភ្នំពេញ", "प्रवेश").forEach {
+            assertTrue(Scripts.needsShaping(it), "$it should be set straight")
+        }
+        // These stand alone well enough to bend one character at a time.
+        listOf("日本", "한국", "ΕΛΛΑΔΑ", "РОССИЯ", "TÜRKİYE", "PARIS", "VIỆT NAM").forEach {
+            assertTrue(!Scripts.needsShaping(it), "$it can follow an arc")
+        }
     }
 
     @Test fun wordingIsInTheCountrysOwnLanguage() {

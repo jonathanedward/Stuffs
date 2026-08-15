@@ -114,6 +114,8 @@ data class CountryTraits(
     val alpha3: String,
     val inkArgb: Int,
     val entryWord: String,
+    /** What the country calls itself, in the same language as the wording. */
+    val nativeName: String,
     val region: DesignRegion,
 ) {
     companion object {
@@ -123,6 +125,7 @@ data class CountryTraits(
             alpha3 = code,
             inkArgb = 0xFF2B2F36.toInt(),
             entryWord = "ENTRY",
+            nativeName = code,
             region = DesignRegion.AMERICAS,
         )
     }

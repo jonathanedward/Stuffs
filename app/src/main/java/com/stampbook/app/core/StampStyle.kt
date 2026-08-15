@@ -62,6 +62,8 @@ data class StampDesign(
     val label: String,
     /** ISO 3166-1 alpha-3, which is what a real stamp carries. */
     val alpha3: String,
+    /** The country's name for itself, ready to print. */
+    val countryName: String,
     val stars: Int,
     val cornerTicks: Boolean,
 )
@@ -102,6 +104,7 @@ object StampStyles {
             },
             label = traits.entryWord,
             alpha3 = traits.alpha3,
+            countryName = traits.nativeName,
             stars = pick.next(4),
             // A shield has no bottom corners to tick, and the marks would land on
             // its taper.

@@ -1,6 +1,11 @@
 package com.stampbook.app
 
+import com.stampbook.app.core.BorderStyle
 import com.stampbook.app.core.Projection
+import com.stampbook.app.core.StampDesign
+import com.stampbook.app.core.StampDevice
+import com.stampbook.app.core.StampLayout
+import com.stampbook.app.core.StampShape
 import com.stampbook.app.core.StampStyles
 import com.stampbook.app.data.country.Countries
 import com.stampbook.app.data.model.PassportStats
@@ -111,27 +116,89 @@ class ProjectionTest {
     }
 }
 
-class StampStyleTest {
+class StampDesignTest {
 
-    @Test fun styleIsStableForASeed() {
-        repeat(200) { seed ->
-            assertEquals(StampStyles.forSeed(seed), StampStyles.forSeed(seed))
+    private val designs = Countries.all.map { it.code to StampStyles.forCountry(it.code) }
+
+    @Test fun aCountryAlwaysGetsTheSameDesign() {
+        Countries.all.forEach {
+            assertEquals(StampStyles.forCountry(it.code), StampStyles.forCountry(it.code))
+        }
+        assertEquals(StampStyles.forCountry("JP"), StampStyles.forCountry("jp"))
+    }
+
+    @Test fun neighboursDoNotShareADesign() {
+        // The whole point of keying off the country: two stamps side by side in the
+        // passport should not look like the same rubber stamp.
+        val distinct = designs.map { it.second }.distinct()
+        assertTrue(distinct.size > Countries.all.size * 0.9, "only ${distinct.size} distinct designs")
+    }
+
+    @Test fun everyShapeAndLayoutGetsUsed() {
+        assertEquals(StampShape.entries.toSet(), designs.map { it.second.shape }.toSet())
+        assertEquals(StampLayout.entries.toSet(), designs.map { it.second.layout }.toSet())
+        assertEquals(BorderStyle.entries.toSet(), designs.map { it.second.border }.toSet())
+        assertEquals(StampDevice.entries.toSet(), designs.map { it.second.device }.toSet())
+    }
+
+    @Test fun noSingleLookSwallowsTheCatalogue() {
+        listOf<(StampDesign) -> Any>({ it.shape }, { it.layout }, { it.border }, { it.inkArgb })
+            .forEach { property ->
+                val biggest = designs.groupingBy { property(it.second) }.eachCount().values.max()
+                assertTrue(biggest < Countries.all.size / 2, "one value covers $biggest countries")
+            }
+    }
+
+    @Test fun layoutsMatchTheOutlineTheySitIn() {
+        val roundOnly = setOf(StampLayout.ARCH, StampLayout.DATE_ARCH)
+        val angularOnly = setOf(StampLayout.SPLIT, StampLayout.FORM)
+        designs.forEach { (code, design) ->
+            if (design.layout in roundOnly) {
+                assertTrue(design.shape.isRound, "$code bends text around ${design.shape}")
+            }
+            if (design.layout in angularOnly) {
+                assertTrue(!design.shape.isRound, "$code rules a ${design.shape}")
+            }
         }
     }
 
-    @Test fun stylesVaryAcrossSeeds() {
-        val styles = (0 until 500).map { StampStyles.forSeed(it) }
-        assertTrue(styles.map { it.shape }.distinct().size >= 4)
-        assertTrue(styles.map { it.inkArgb }.distinct().size >= 5)
-        assertTrue(styles.map { it.label }.distinct().size >= 5)
+    @Test fun devicesAppearOnlyWhereThereIsRoom() {
+        designs.forEach { (code, design) ->
+            when (design.layout) {
+                // The split panel is built around its device.
+                StampLayout.SPLIT -> assertTrue(design.device != StampDevice.NONE, "$code has no device")
+                // Anything else would collide with the knocked-out band or a rule.
+                StampLayout.ARCH, StampLayout.DATE_ARCH -> Unit
+                else -> assertEquals(StampDevice.NONE, design.device, "$code carries a device")
+            }
+        }
+    }
+
+    @Test fun cornerTicksNeverLandOnACurve() {
+        designs.forEach { (code, design) ->
+            if (design.cornerTicks) assertTrue(!design.shape.isRound, "$code ticks a ${design.shape}")
+        }
+    }
+}
+
+class StampImpressionTest {
+
+    @Test fun impressionIsStableForASeed() {
+        repeat(200) { seed -> assertEquals(StampStyles.forSeed(seed), StampStyles.forSeed(seed)) }
+    }
+
+    @Test fun impressionsVaryAcrossSeeds() {
+        val pressings = (0 until 500).map { StampStyles.forSeed(it) }
+        assertTrue(pressings.map { it.rotationDegrees }.distinct().size > 400)
+        assertTrue(pressings.map { it.serial }.distinct().size > 400)
     }
 
     @Test fun rotationAndAlphaStayInPrintableBounds() {
         (Int.MIN_VALUE / 2 until Int.MIN_VALUE / 2 + 300).forEach { seed ->
-            val style = StampStyles.forSeed(seed)
-            assertTrue(abs(style.rotationDegrees) <= 11f, "rotation ${style.rotationDegrees}")
-            assertTrue(style.alpha in 0.72f..0.95f, "alpha ${style.alpha}")
-            assertTrue(style.starCount in 0..3)
+            val impression = StampStyles.forSeed(seed)
+            assertTrue(abs(impression.rotationDegrees) <= 11f, "rotation ${impression.rotationDegrees}")
+            assertTrue(impression.alpha in 0.72f..0.95f, "alpha ${impression.alpha}")
+            assertEquals(5, impression.serial.length)
         }
     }
 }

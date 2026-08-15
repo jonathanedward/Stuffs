@@ -9,10 +9,12 @@ the app works on a plane and in a country where your SIM does not.
 ## What it does
 
 **Passport** — the front page counts your countries and how much of the world
-that is, then every stamp you have collected, newest year first. Each stamp is
-drawn at run time from a seed stored with it: shape, ink colour, rotation, wear
-and the wording all vary, so no two look alike and any one stamp looks the same
-forever.
+that is, then every stamp you have collected, newest year first. Every stamp is
+drawn at run time from two inputs. The country decides the design — outline,
+border treatment, layout, ink, travel device and wording — so every Japanese
+stamp is the same stamp and none of them look like Portugal's. The seed stored
+with each stamp decides only how that pressing came out: the angle it was banged
+down at, how much ink was on the pad, where the ink failed, and its serial.
 
 **Trips** — a trip groups the stamps from one journey and gives them a name, a
 date range and notes. Stamps can also stand alone; those show up under "Not in
@@ -88,10 +90,22 @@ count, so a trip to the Falklands or the Isle of Man shows on the map without
 claiming a country. Their centroids were computed from the boundary outlines
 rather than typed in.
 
-**Why stamps are generated, not drawn.** Shipping artwork for 200 countries is
-not realistic, and a list of rows is not something anyone screenshots. Deriving
-the look from a stored seed means the passport feels hand-collected while the
-data stays a plain table.
+**Why stamps are generated, not drawn.** Shipping artwork for 238 places is not
+realistic, and a list of rows is not something anyone screenshots. Generating
+them keeps the data a plain table while the passport still feels collected.
+
+Splitting the country's design from the pressing is what makes that work.
+Deriving everything from the stamp's own seed made all 238 look like variations
+on one rubber stamp; keying the design to the ISO code instead gives each
+authority its own. Eight outlines, six layouts, five borders, fourteen inks,
+six devices and twelve wordings, drawn independently: over 90% of countries end
+up with a combination no one else has, and a test holds that line.
+
+Text is fitted against the outline rather than against fixed margins — each
+layout asks the shape how much room there is at that height, and the shape
+answers for its own geometry, including the innermost line of the border. That
+is what keeps a long name off the taper of a shield and an arced date clear of a
+double ring.
 
 ## Data
 

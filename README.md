@@ -10,11 +10,13 @@ the app works on a plane and in a country where your SIM does not.
 
 **Passport** — the front page counts your countries and how much of the world
 that is, then every stamp you have collected, newest year first. Every stamp is
-drawn at run time from two inputs. The country decides the design — outline,
-border treatment, layout, ink, travel device and wording — so every Japanese
-stamp is the same stamp and none of them look like Portugal's. The seed stored
-with each stamp decides only how that pressing came out: the angle it was banged
-down at, how much ink was on the pad, where the ink failed, and its serial.
+drawn at run time, and what makes it that country's stamp is taken from the
+country: the ink is its flag's dominant hue muted to something a rubber stamp
+could leave, the wording is what a border post there would print (上陸許可 in
+Japan, دخول in Morocco, ΕΙΣΟΔΟΣ in Greece), and the shape follows regional
+convention. The seed stored with each stamp decides only how that pressing came
+out: the angle it was banged down at, how much ink was on the pad, where the ink
+failed, and its serial.
 
 **Trips** — a trip groups the stamps from one journey and gives them a name, a
 date range and notes. Stamps can also stand alone; those show up under "Not in
@@ -44,7 +46,8 @@ Open in Android Studio, or from the command line with an Android SDK installed:
 
 ```
 core/            pure logic, no Android imports — projection, stamp styling
-data/country/    the offline place catalogue (238 places, 196 sovereign)
+data/country/    the offline place catalogue (238 places, 196 sovereign) and
+                 the generated per-country ink, wording and design family
 data/world/      reader for the packed country outlines
 data/local/      Room entities, DAOs, database
 data/model/      domain types and the stats calculation
@@ -55,8 +58,9 @@ ui/map/          the world map
 ui/add/          the stamping flow
 nav/             routes and the app shell
 
-assets/world.sbw            packed country outlines, 68 KB
-tools/build_world_asset.py  rebuilds that asset from Natural Earth
+assets/world.sbw               packed country outlines, 68 KB
+tools/build_world_asset.py     rebuilds that asset from Natural Earth
+tools/build_country_details.mjs  rebuilds the per-country traits from flag artwork
 ```
 
 Flag emoji are derived from ISO 3166-1 alpha-2 codes as regional indicator
@@ -96,10 +100,22 @@ them keeps the data a plain table while the passport still feels collected.
 
 Splitting the country's design from the pressing is what makes that work.
 Deriving everything from the stamp's own seed made all 238 look like variations
-on one rubber stamp; keying the design to the ISO code instead gives each
-authority its own. Eight outlines, six layouts, five borders, fourteen inks,
-six devices and twelve wordings, drawn independently: over 90% of countries end
-up with a combination no one else has, and a test holds that line.
+on one rubber stamp. Keying the design to the country instead gives each
+authority its own, and the traits that matter are real rather than invented:
+flag-derived ink, an entry word in one of the country's official languages, its
+alpha-3 code, and a design family that follows what that part of the world
+actually prints. Only the border treatment, device and ornaments come from
+hashing the code. Over 90% of countries end up with a look no one else has, and
+a test holds that line.
+
+Design families are stored as whole shape-and-layout pairs rather than two
+independent lists, so a country can never draw an arched heading on a rectangle.
+
+Text is fitted against the outline rather than against fixed margins — each
+layout asks the shape how much room there is at that height, and the shape
+answers for its own geometry, including the innermost line of the border. That
+is what keeps a long name off the taper of a shield and an arced date clear of a
+double ring.
 
 Text is fitted against the outline rather than against fixed margins — each
 layout asks the shape how much room there is at that height, and the shape
@@ -115,9 +131,15 @@ Neither is a runtime dependency — they are inputs to
 `tools/build_world_asset.py`, which is run by hand when the source data changes:
 
 ```
-npm pack world-atlas@2.0.2 world-countries@5.0.0
+npm pack world-atlas@2.0.2 world-countries@5.0.0 flag-icons@7.2.3
 python3 tools/build_world_asset.py <extracted-dir>
+node tools/build_country_details.mjs <extracted-dir>
 ```
+
+Stamp inks are sampled from the flag artwork in `flag-icons` (MIT); entry
+wording and ISO alpha-3 codes come from `world-countries` (MIT). Rasterising
+the flags needs a browser, so that generator runs under Playwright. Neither
+package is a runtime dependency — both feed a generated Kotlin table.
 
 ## Not built yet
 

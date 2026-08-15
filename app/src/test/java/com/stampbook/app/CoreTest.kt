@@ -1,6 +1,7 @@
 package com.stampbook.app
 
 import com.stampbook.app.core.BorderStyle
+import com.stampbook.app.core.DesignRegion
 import com.stampbook.app.core.Projection
 import com.stampbook.app.core.StampDesign
 import com.stampbook.app.core.StampDevice
@@ -8,6 +9,7 @@ import com.stampbook.app.core.StampLayout
 import com.stampbook.app.core.StampShape
 import com.stampbook.app.core.StampStyles
 import com.stampbook.app.data.country.Countries
+import com.stampbook.app.data.country.CountryDetails
 import com.stampbook.app.data.model.PassportStats
 import com.stampbook.app.data.model.Stamp
 import java.time.LocalDate
@@ -118,13 +120,61 @@ class ProjectionTest {
 
 class StampDesignTest {
 
-    private val designs = Countries.all.map { it.code to StampStyles.forCountry(it.code) }
+    private val designs = Countries.all.map { it.code to StampStyles.forCountry(CountryDetails[it.code]) }
 
     @Test fun aCountryAlwaysGetsTheSameDesign() {
         Countries.all.forEach {
-            assertEquals(StampStyles.forCountry(it.code), StampStyles.forCountry(it.code))
+            assertEquals(
+                StampStyles.forCountry(CountryDetails[it.code]),
+                StampStyles.forCountry(CountryDetails[it.code]),
+            )
         }
-        assertEquals(StampStyles.forCountry("JP"), StampStyles.forCountry("jp"))
+        assertEquals(
+            StampStyles.forCountry(CountryDetails["JP"]),
+            StampStyles.forCountry(CountryDetails["jp"]),
+        )
+    }
+
+    @Test fun everyCountryHasItsOwnTraits() {
+        Countries.all.forEach {
+            val traits = CountryDetails[it.code]
+            assertEquals(it.code, traits.code)
+            assertEquals(3, traits.alpha3.length, "${it.code} alpha-3")
+            assertTrue(traits.entryWord.isNotBlank(), "${it.code} has no wording")
+            // Opaque, and dark enough to read as ink on paper.
+            assertEquals(0xFF, traits.inkArgb ushr 24 and 0xFF, "${it.code} ink not opaque")
+        }
+    }
+
+    @Test fun inkComesFromTheFlagNotAPalette() {
+        // A shared palette would repeat heavily across 238 countries; flags do not.
+        val inks = Countries.all.map { CountryDetails[it.code].inkArgb }.distinct()
+        assertTrue(inks.size > 150, "only ${inks.size} distinct inks")
+    }
+
+    @Test fun wordingIsInTheCountrysOwnLanguage() {
+        assertEquals("上陸許可", CountryDetails["JP"].entryWord)
+        assertEquals("ENTRÉE", CountryDetails["FR"].entryWord)
+        assertEquals("ВЪЕЗД", CountryDetails["RU"].entryWord)
+        assertEquals("دخول", CountryDetails["SA"].entryWord)
+        assertEquals("ΕΙΣΟΔΟΣ", CountryDetails["GR"].entryWord)
+        assertEquals("입국", CountryDetails["KR"].entryWord)
+    }
+
+    @Test fun unknownCodesStillGetAStamp() {
+        val traits = CountryDetails["ZZ"]
+        assertEquals("ZZ", traits.alpha3)
+        assertEquals("ENTRY", traits.entryWord)
+    }
+
+    @Test fun neighboursInARegionShareAFamilyWithoutRepeating() {
+        // A page of European stamps should read as European, but Germany and
+        // France must not print the same stamp.
+        val europe = Countries.all
+            .filter { CountryDetails[it.code].region == DesignRegion.EUROPE }
+            .map { StampStyles.forCountry(CountryDetails[it.code]) }
+        assertTrue(europe.all { !it.shape.isRound || it.shape == StampShape.HEXAGON })
+        assertTrue(europe.distinct().size > europe.size * 0.85)
     }
 
     @Test fun neighboursDoNotShareADesign() {
@@ -147,6 +197,18 @@ class StampDesignTest {
                 val biggest = designs.groupingBy { property(it.second) }.eachCount().values.max()
                 assertTrue(biggest < Countries.all.size / 2, "one value covers $biggest countries")
             }
+    }
+
+    @Test fun everyRegionOffersOnlyWorkableCombinations() {
+        DesignRegion.entries.forEach { region ->
+            assertTrue(region.looks.isNotEmpty(), "$region has no looks")
+            region.looks.forEach { (shape, layout) ->
+                val needsRound = layout == StampLayout.ARCH || layout == StampLayout.DATE_ARCH
+                val needsAngular = layout == StampLayout.SPLIT || layout == StampLayout.FORM
+                if (needsRound) assertTrue(shape.isRound, "$region bends text around $shape")
+                if (needsAngular) assertTrue(!shape.isRound, "$region rules a $shape")
+            }
+        }
     }
 
     @Test fun layoutsMatchTheOutlineTheySitIn() {

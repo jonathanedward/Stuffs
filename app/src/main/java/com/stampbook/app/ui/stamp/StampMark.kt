@@ -31,6 +31,7 @@ import com.stampbook.app.core.StampImpression
 import com.stampbook.app.core.StampLayout
 import com.stampbook.app.core.StampShape
 import com.stampbook.app.core.StampStyles
+import com.stampbook.app.data.country.CountryDetails
 import com.stampbook.app.data.model.Stamp
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -56,6 +57,7 @@ private class Copy(
     val date: String,
     val label: String,
     val serial: String,
+    val alpha3: String,
     val hasCity: Boolean,
 )
 
@@ -70,6 +72,7 @@ private fun Stamp.copy(design: StampDesign, impression: StampImpression): Copy {
         date = date.format(STAMP_DATE).uppercase(Locale.ENGLISH),
         label = if (hasCity) design.label else "",
         serial = "No ${impression.serial}",
+        alpha3 = design.alpha3,
         hasCity = hasCity,
     )
 }
@@ -85,7 +88,9 @@ fun StampMark(
     stampSize: Dp = 132.dp,
     rotate: Boolean = true,
 ) {
-    val design = remember(stamp.countryCode) { StampStyles.forCountry(stamp.countryCode) }
+    val design = remember(stamp.countryCode) {
+        StampStyles.forCountry(CountryDetails[stamp.countryCode])
+    }
     val impression = remember(stamp.seed) { StampStyles.forSeed(stamp.seed) }
     val copy = remember(stamp.id, stamp.city, stamp.countryCode, stamp.date, design, impression) {
         stamp.copy(design, impression)
@@ -332,6 +337,13 @@ private class Frame(
     /** The radius text has to live inside: the innermost line of the border. */
     private val inner = radius * design.border.contentInset
 
+    /**
+     * Vertical offsets are quoted against a plain outline. A border with an inner
+     * ring leaves less height, so every line moves in by the same fraction rather
+     * than each layout carrying its own special case.
+     */
+    private val squeeze = design.border.contentInset
+
     private fun roomAt(y: Float, inset: Float = 0.82f) =
         design.shape.halfWidthAt(inner, y) * 2f * inset
 
@@ -356,7 +368,7 @@ private class Frame(
         if (text.isEmpty()) return null
         val paint = paint(scale, bold, spacing)
         fit(paint, text, width, extent * floor)
-        drawIntoCanvas { it.nativeCanvas.drawText(text, x, cy + dy, paint) }
+        drawIntoCanvas { it.nativeCanvas.drawText(text, x, cy + dy * squeeze, paint) }
         return paint
     }
 
@@ -377,8 +389,8 @@ private class Frame(
     /** Where the right-hand panel of a split layout sits, and how wide it can be. */
     private fun panel(dy: Float): Pair<Float, Float> {
         val right = design.shape.halfWidthAt(inner, dy) * 0.90f
-        val left = -radius * 0.24f
-        return (cx + (left + right) / 2f) to ((right - left) * 0.92f)
+        val left = -radius * 0.14f
+        return (cx + (left + right) / 2f) to ((right - left) * 0.88f)
     }
 
     private fun DrawScope.arc(text: String, arcRadius: Float, scale: Float, bottom: Boolean) {
@@ -413,8 +425,8 @@ private class Frame(
     private fun DrawScope.rule(dy: Float, width: Float = roomAt(dy, 0.62f)) {
         drawLine(
             ink,
-            Offset(cx - width / 2f, cy + dy),
-            Offset(cx + width / 2f, cy + dy),
+            Offset(cx - width / 2f, cy + dy * squeeze),
+            Offset(cx + width / 2f, cy + dy * squeeze),
             extent * 0.007f,
         )
     }
@@ -428,7 +440,10 @@ private class Frame(
             val offset = half + extent * 0.055f + index * extent * 0.05f
             if (offset + starRadius > limit) return
             listOf(cx - offset, cx + offset).forEach { x ->
-                drawPath(starPath(Offset(x, cy + dy - extent * 0.045f), starRadius, starRadius * 0.42f), ink)
+                drawPath(
+                    starPath(Offset(x, cy + (dy - extent * 0.045f) * squeeze), starRadius, starRadius * 0.42f),
+                    ink,
+                )
             }
         }
     }
@@ -462,7 +477,7 @@ private class Frame(
     }
 
     fun band(scope: DrawScope, copy: Copy) = with(scope) {
-        val half = extent * 0.105f
+        val half = extent * 0.105f * squeeze
         clipPath(outline) {
             drawRect(
                 ink,
@@ -476,7 +491,7 @@ private class Frame(
         }
         fit(knockout, copy.place, roomAt(0f, 0.78f), extent * 0.055f)
         drawIntoCanvas {
-            it.nativeCanvas.drawText(copy.place, cx, cy + extent * 0.043f, knockout)
+            it.nativeCanvas.drawText(copy.place, cx, cy + extent * 0.043f * squeeze, knockout)
         }
         line(copy.country, -extent * 0.155f, 0.068f, bold = true, spacing = 0.14f)
         line(copy.date, extent * 0.20f, 0.072f)
@@ -485,19 +500,25 @@ private class Frame(
 
     fun split(scope: DrawScope, copy: Copy) = with(scope) {
         val divider = cx - radius * 0.24f
-        val reach = design.shape.halfWidthAt(inner, 0f) * 0.55f
+        val reach = design.shape.halfWidthAt(inner, 0f) * 0.55f * squeeze
         drawLine(ink, Offset(divider, cy - reach), Offset(divider, cy + reach), extent * 0.008f)
-        drawDevice(
-            design.device,
-            ink,
-            Offset((divider + cx - design.shape.halfWidthAt(inner, 0f) * 0.9f) / 2f, cy),
-            extent * 0.105f,
+        val deviceX = (divider + cx - design.shape.halfWidthAt(inner, 0f) * 0.9f) / 2f
+        drawDevice(design.device, ink, Offset(deviceX, cy - extent * 0.045f), extent * 0.095f)
+        // The country code sits under the pictogram, as it does on a Schengen stamp.
+        line(
+            text = copy.alpha3,
+            dy = extent * 0.115f,
+            scale = 0.052f,
+            bold = true,
+            spacing = 0.1f,
+            x = deviceX,
+            width = radius * 0.5f,
         )
         listOf(
             Triple(copy.country, -extent * 0.105f, 0.058f),
             Triple(copy.place, extent * 0.035f, 0.105f),
             Triple(copy.date, extent * 0.135f, 0.058f),
-            Triple(copy.serial, extent * 0.215f, 0.046f),
+            Triple(copy.label, extent * 0.215f, 0.05f),
         ).forEachIndexed { index, (text, dy, scale) ->
             val (x, width) = panel(dy)
             line(
@@ -514,12 +535,12 @@ private class Frame(
     }
 
     fun form(scope: DrawScope, copy: Copy) = with(scope) {
-        line(copy.country, -extent * 0.185f, 0.068f, bold = true, spacing = 0.14f)
-        rule(-extent * 0.14f)
-        line(copy.place, extent * 0.015f, 0.140f, bold = true, spacing = 0.02f, floor = 0.058f)
-        rule(extent * 0.075f)
-        line(copy.date, extent * 0.16f, 0.070f)
-        line(copy.serial, extent * 0.245f, 0.048f, spacing = 0.08f)
+        line(copy.country, -extent * 0.195f, 0.066f, bold = true, spacing = 0.14f)
+        rule(-extent * 0.150f)
+        line(copy.place, extent * 0.010f, 0.135f, bold = true, spacing = 0.02f, floor = 0.056f)
+        line(copy.date, extent * 0.125f, 0.066f)
+        line(copy.label, extent * 0.205f, 0.052f, spacing = 0.16f)
+        line(copy.serial, extent * 0.280f, 0.044f, spacing = 0.06f)
     }
 }
 
